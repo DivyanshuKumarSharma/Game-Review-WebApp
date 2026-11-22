@@ -24,7 +24,7 @@ Reviews score a game from 1 to 10 overall and in five categories (gameplay, grap
 
 ### Implementation notes
 
-- The radar chart is hand-drawn SVG, with no chart library.
+- The radar chart is hand-drawn SVG, with no chart library. It plots scores on a 0–10 scale and clamps out-of-range values to the chart's edges.
 - Navigation uses a small React context (`RouterContext`) instead of a routing library.
 - Row-level security is enabled on both tables. Anyone can read games and reviews, and the public anon key can add reviews and games, but it can't edit or delete them.
 - `scripts/importRawgGames.mjs` pulls the first five pages of games (100 titles) from the [RAWG](https://rawg.io/apidocs) API and upserts them into Supabase by `rawg_id`, so running it again updates games instead of duplicating them. It runs locally with the service role key and converts RAWG's 0–5 rating to the app's 0–10 scale.
@@ -102,7 +102,6 @@ supabase/migrations/  Database schema, indexes and RLS policies
 
 Things I'd change next:
 
-- **The radar chart expects 0–100 scores.** `RadarChart` divides each score by 100, but games are scored from 0 to 10, so the chart is drawn at a tenth of its size. Dividing by 10 instead would fix it, after checking that no existing rows use a 0–100 scale.
 - **Anyone can add games.** Like reviews, games can be added without an account, so the catalogue is open to spam. Supabase Auth with an admin role would fix that.
 - **Reviews are anonymous.** Anyone with the anon key can post a review under any name. Supabase Auth and a per-user insert policy would fix that.
 - **Ratings are computed in the browser.** Each page fetches all games and reviews and averages them client-side. A SQL view or database function would scale better.

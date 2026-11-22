@@ -7,9 +7,11 @@ interface RadarChartProps {
     value: number;
   };
   size?: number;
+  /** The score that reaches the outer ring. Game scores run from 0 to 10. */
+  maxValue?: number;
 }
 
-export function RadarChart({ data, size = 300 }: RadarChartProps) {
+export function RadarChart({ data, size = 300, maxValue = 10 }: RadarChartProps) {
   const categories = [
     { key: 'gameplay', label: 'Gameplay', value: data.gameplay },
     { key: 'graphics', label: 'Graphics', value: data.graphics },
@@ -41,7 +43,9 @@ export function RadarChart({ data, size = 300 }: RadarChartProps) {
 
   const dataPoints = categories.map((cat, index) => {
     const angle = angleStep * index;
-    const radius = (cat.value / 100) * maxRadius;
+    // Clamp so a bad value can't draw outside the chart or through the center.
+    const ratio = Math.min(Math.max(Number(cat.value) / maxValue, 0), 1);
+    const radius = ratio * maxRadius;
     return polarToCartesian(angle, radius);
   });
 
