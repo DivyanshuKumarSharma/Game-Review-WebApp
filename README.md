@@ -26,8 +26,8 @@ Reviews score a game from 1 to 10 overall and in five categories (gameplay, grap
 
 - The radar chart is hand-drawn SVG, with no chart library.
 - Navigation uses a small React context (`RouterContext`) instead of a routing library.
-- Row-level security is enabled on both tables. Anyone can read games and reviews, and the public anon key can insert reviews.
-- `scripts/importRawgGames.mjs` pulls the first five pages of games (100 titles) from the [RAWG](https://rawg.io/apidocs) API and upserts them into Supabase.
+- Row-level security is enabled on both tables. Anyone can read games and reviews, and the public anon key can add reviews and games, but it can't edit or delete them.
+- `scripts/importRawgGames.mjs` pulls the first five pages of games (100 titles) from the [RAWG](https://rawg.io/apidocs) API and upserts them into Supabase by `rawg_id`, so running it again updates games instead of duplicating them. It runs locally with the service role key and converts RAWG's 0–5 rating to the app's 0–10 scale.
 
 ## Tech stack
 
@@ -53,10 +53,14 @@ Requirements: Node.js 18 or newer, a free [Supabase](https://supabase.com) proje
    ```bash
    VITE_SUPABASE_URL=https://your-project.supabase.co
    VITE_SUPABASE_ANON_KEY=your-anon-key
-   RAWG_API_KEY=your-rawg-key   # only needed for the import script
+
+   # Only needed for the import script. Never prefix these with VITE_,
+   # because Vite ships VITE_ variables to the browser.
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   RAWG_API_KEY=your-rawg-key
    ```
 
-3. Create the tables by running `supabase/migrations/20260311155345_create_bossframe_schema.sql` in the Supabase SQL editor (or with `supabase db push`). Read **Known gaps** below before importing or adding games.
+3. Set up the database by running both files in `supabase/migrations/` in order, in the Supabase SQL editor or with `supabase db push`. The first creates the tables, indexes and read policies. The second adds what adding and importing games need: a unique `rawg_id`, an optional release date, decimal category scores, and an insert policy for games.
 
 4. Optionally, import games from RAWG:
 
@@ -96,9 +100,10 @@ supabase/migrations/  Database schema, indexes and RLS policies
 
 ## Known gaps
 
-These are areas where the code expects more than the committed migration provides, plus things I'd change next:
+Things I'd change next:
 
-- **Adding and importing games needs extra database setup.** The migration has no `INSERT` policy on `games`, so the Add game page and the import script are blocked by row-level security when using the anon key. The import script also upserts on a `rawg_id` column that the migration doesn't create, and it can send an empty `release_date` to a column that is `NOT NULL`.
+- **The radar chart expects 0–100 scores.** `RadarChart` divides each score by 100, but games are scored from 0 to 10, so the chart is drawn at a tenth of its size. Dividing by 10 instead would fix it, after checking that no existing rows use a 0–100 scale.
+- **Anyone can add games.** Like reviews, games can be added without an account, so the catalogue is open to spam. Supabase Auth with an admin role would fix that.
 - **Reviews are anonymous.** Anyone with the anon key can post a review under any name. Supabase Auth and a per-user insert policy would fix that.
 - **Ratings are computed in the browser.** Each page fetches all games and reviews and averages them client-side. A SQL view or database function would scale better.
 - **The RAWG import fills placeholders.** Developer and publisher are set to "Unknown", the description is the RAWG slug, and all five category scores are seeded from RAWG's single overall rating.
