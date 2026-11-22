@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Game, Review } from '../types';
+import { Game } from '../types';
 import { useRouter } from '../context/RouterContext';
 
 interface GameWithRating extends Game {

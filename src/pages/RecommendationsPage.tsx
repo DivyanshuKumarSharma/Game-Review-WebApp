@@ -3,7 +3,6 @@ import { Sparkles, Star, ThumbsUp, TrendingUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Game } from '../types';
 import { useRouter } from '../context/RouterContext';
-import { RadarChart } from '../components/RadarChart';
 
 interface RecommendedGame extends Game {
   average_rating: number;
